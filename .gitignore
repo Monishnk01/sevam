@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+.env
+backend/database.sqlite
+backend/models/*.joblib
+__pycache__/
+*.pyc
+.DS_Store
