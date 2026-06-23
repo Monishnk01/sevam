@@ -1,6 +1,6 @@
-# Upahar AI - Autonomous Food Waste Prediction & Redistribution
+# Sevam AI - Autonomous Food Waste Prediction & Redistribution
 
-Upahar AI is a full-stack, AI-powered web application that helps restaurants reduce food waste by predicting surplus food and automatically redistributing it to NGOs, shelters, orphanages, and food banks.
+Sevam AI is a full-stack, AI-powered web application that helps restaurants reduce food waste by predicting surplus food and automatically redistributing it to NGOs, shelters, orphanages, and food banks.
 
 ## Quick Start
 

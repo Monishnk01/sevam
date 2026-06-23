@@ -55,10 +55,10 @@ def train_model(restaurant_id):
     df = pd.read_sql_query(query, conn, params=[restaurant_id])
     conn.close()
     
-    if len(df) < 14:
+    if len(df) < 5:
         return {
             "success": False,
-            "message": f"Insufficient data: only {len(df)} records found. Need at least 14 days of data to train."
+            "message": f"Insufficient data: only {len(df)} records found. Need at least 5 days of data to train."
         }
     
     # Engineer features
@@ -97,7 +97,7 @@ def predict_surplus(restaurant_id, food_name, quantity_prepared, target_date_str
     if not os.path.exists(model_path):
         return {
             "success": False,
-            "message": "Model not trained yet. Restaurant requires 14 days of historical data."
+            "message": "Model not trained yet. Restaurant requires 5 days of historical data."
         }
     
     # Load model package
@@ -158,8 +158,8 @@ def predict_surplus(restaurant_id, food_name, quantity_prepared, target_date_str
         "success": True,
         "food_name": food_name,
         "prediction_date": target_date_str,
-        "predicted_leftover": round(predicted_leftover, 2),
-        "predicted_waste": round(predicted_waste, 2),
+        "predicted_leftover": int(round(predicted_leftover)),
+        "predicted_waste": int(round(predicted_waste)),
         "features_used": {
             "prev_leftover": round(prev_leftover, 2),
             "historical_trend": round(historical_trend, 2),

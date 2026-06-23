@@ -14,16 +14,16 @@ export default function CustomMap({ restaurants = [], receivers = [], activeDona
   }, []);
 
   // Map limits mapping latitude and longitude to a 100x100 relative viewbox
-  // Default bounds for Bangalore (12.94 to 13.00 N, 77.56 to 77.63 E)
-  const latMin = 12.94;
-  const latMax = 13.00;
-  const lngMin = 77.56;
-  const lngMax = 77.63;
+  // Default bounds for Mysuru (12.28 to 12.33 N, 76.61 to 76.67 E)
+  const latMin = 12.28;
+  const latMax = 12.33;
+  const lngMin = 76.61;
+  const lngMax = 76.67;
 
   const getRelativeCoords = (lat, lng) => {
     // If invalid coords, generate mock offset
-    const latitude = lat || 12.9716;
-    const longitude = lng || 77.5946;
+    const latitude = lat || 12.3051;
+    const longitude = lng || 76.6413;
 
     const x = ((longitude - lngMin) / (lngMax - lngMin)) * 100;
     const y = 100 - ((latitude - latMin) / (latMax - latMin)) * 100; // Invert Y for screen coords
@@ -181,7 +181,7 @@ export default function CustomMap({ restaurants = [], receivers = [], activeDona
             ) : (
               <Home className="w-4 h-4 text-emerald-400" />
             )}
-            <span className="font-bold text-sm text-white truncate">{hoveredNode.name}</span>
+            <span className="font-bold text-sm text-dark-50 truncate">{hoveredNode.name}</span>
           </div>
           <p className="text-xs text-dark-400 mb-2 truncate">{hoveredNode.address}</p>
           

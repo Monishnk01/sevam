@@ -32,11 +32,11 @@ export default function DashboardLayout({ user, onLogout, children, notification
         <div>
           {/* Brand/Logo Header */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-success-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <Heart className="w-5 h-5 text-white animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center shadow-lg shadow-primary-500/20">
+              <Heart className="w-5 h-5 text-dark-50 animate-pulse" />
             </div>
             <div>
-              <h1 className="font-extrabold text-base tracking-wide bg-gradient-to-r from-white via-dark-100 to-primary-400 bg-clip-text text-transparent">UPAHAR AI</h1>
+              <h1 className="font-extrabold text-base tracking-wide bg-gradient-to-r from-white via-dark-100 to-primary-400 bg-clip-text text-transparent">SEVAM AI</h1>
               <p className="text-[10px] text-dark-500 font-mono tracking-widest">AUTONOMOUS REDIST</p>
             </div>
           </div>
@@ -48,7 +48,7 @@ export default function DashboardLayout({ user, onLogout, children, notification
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <div className="truncate">
-                <p className="text-xs font-bold text-white leading-tight">{user.name}</p>
+                <p className="text-xs font-bold text-dark-50 leading-tight">{user.name}</p>
                 <p className="text-[9px] text-dark-400 truncate">{user.email}</p>
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function DashboardLayout({ user, onLogout, children, notification
         {/* Top Header */}
         <header className="h-16 border-b border-dark-800 px-8 flex items-center justify-between bg-dark-950/20 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-bold text-white tracking-wide uppercase">
+            <h2 className="text-sm font-bold text-dark-50 tracking-wide uppercase">
               {user.role} Operations Control
             </h2>
             <span className="w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse" />
@@ -115,7 +115,7 @@ export default function DashboardLayout({ user, onLogout, children, notification
             {/* Live Alerts Notification Center Trigger */}
             <button
               onClick={() => setShowNotificationCenter(!showNotificationCenter)}
-              className="relative p-2.5 rounded-xl bg-dark-900 border border-dark-800 text-dark-300 hover:text-white hover:border-dark-700 transition-all"
+              className="relative p-2.5 rounded-xl bg-dark-900 border border-dark-800 text-dark-300 hover:text-dark-50 hover:border-dark-700 transition-all"
             >
               <Bell className="w-4 h-4" />
               {notifications.length > 0 && (
@@ -127,7 +127,7 @@ export default function DashboardLayout({ user, onLogout, children, notification
             {showNotificationCenter && (
               <div className="absolute right-0 top-12 w-96 rounded-2xl glass-card border border-dark-700 p-4 shadow-2xl z-50 max-h-[420px] overflow-y-auto animate-fade-in">
                 <div className="flex items-center justify-between border-b border-dark-800 pb-3 mb-3">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-dark-50 flex items-center gap-1.5">
                     <Activity className="w-3.5 h-3.5 text-primary-400" />
                     Agent Active Logs
                   </span>

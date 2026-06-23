@@ -8,20 +8,20 @@
   body {
     @apply bg-dark-950 text-dark-100 font-sans antialiased overflow-x-hidden;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.07) 0px, transparent 50%),
-      radial-gradient(at 50% 0%, rgba(34, 197, 94, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(91, 33, 182, 0.07) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(234, 179, 8, 0.1) 0px, transparent 50%),
+      radial-gradient(at 50% 0%, rgba(0, 0, 0, 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(202, 138, 4, 0.1) 0px, transparent 50%);
     background-attachment: fixed;
   }
 }
 
 @layer utilities {
   .glass-card {
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
   }
   
   .glass-card-hover {
@@ -29,11 +29,11 @@
   }
 
   .glow-text {
-    text-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+    text-shadow: 0 0 12px rgba(234, 179, 8, 0.6);
   }
 
   .glow-text-success {
-    text-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -44,14 +44,29 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.3);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(234, 179, 8, 0.3);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.6);
+  background: rgba(234, 179, 8, 0.6);
+}
+
+/* Form Input Overrides */
+input,
+input[type="email"],
+input[type="password"],
+textarea {
+  color: #000000 !important;
+  caret-color: #000000 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6B7280 !important;
+  opacity: 1;
 }

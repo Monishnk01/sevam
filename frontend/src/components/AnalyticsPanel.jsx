@@ -48,7 +48,7 @@ export default function AnalyticsPanel({ foodEntries = [], predictions = [] }) {
     return (
       <div className="flex flex-col items-center justify-center h-[300px] p-6 rounded-2xl glass-card border border-dark-800 text-center">
         <TrendingDown className="w-12 h-12 text-dark-500 mb-3 animate-pulse" />
-        <h4 className="font-semibold text-white mb-1">No Operational Data Logged</h4>
+        <h4 className="font-semibold text-dark-50 mb-1">No Operational Data Logged</h4>
         <p className="text-xs text-dark-400 max-w-[280px]">
           Seed demo data or enter daily food preparations to generate predictive analytics charts.
         </p>
@@ -63,7 +63,7 @@ export default function AnalyticsPanel({ foodEntries = [], predictions = [] }) {
       <div className="p-5 rounded-2xl glass-card border border-dark-800 flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-4 h-4 text-primary-400" />
-          <h3 className="font-bold text-sm text-white tracking-wide">Daily Preparation vs Remaining</h3>
+          <h3 className="font-bold text-sm text-dark-50 tracking-wide">Daily Preparation vs Remaining</h3>
         </div>
         
         <div className="w-full h-[260px] text-xs">
@@ -90,7 +90,7 @@ export default function AnalyticsPanel({ foodEntries = [], predictions = [] }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Percent className="w-4 h-4 text-success-400" />
-            <h3 className="font-bold text-sm text-white tracking-wide">AI Prediction vs True Values</h3>
+            <h3 className="font-bold text-sm text-dark-50 tracking-wide">AI Prediction vs True Values</h3>
           </div>
           <span className="px-2 py-0.5 rounded-full bg-success-500/10 text-success-400 border border-success-500/20 text-[10px] font-semibold">
             Accuracy Tracked

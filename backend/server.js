@@ -80,10 +80,10 @@ app.post('/api/auth/register', async (req, res) => {
       [userId, email, passwordHash, name, role]
     );
 
-    // Default coordinates if not provided (Bangalore center)
-    const lat = latitude || (12.9716 + (Math.random() * 0.04 - 0.02));
-    const lng = longitude || (77.5946 + (Math.random() * 0.04 - 0.02));
-    const addr = address || 'Bengaluru, Karnataka, India';
+    // Default coordinates if not provided (Mysuru center)
+    const lat = latitude || (12.3051 + (Math.random() * 0.04 - 0.02));
+    const lng = longitude || (76.6413 + (Math.random() * 0.04 - 0.02));
+    const addr = address || 'Mysuru, Karnataka, India';
 
     let profileId = '';
 
@@ -205,7 +205,7 @@ app.post('/api/food-entries', async (req, res) => {
     let isModelTrained = false;
     let aiPrediction = null;
 
-    if (entriesCount.count >= 14) {
+    if (entriesCount.count >= 5) {
       // 2. Automatically trigger model training in background if not already trained or to update it
       const scriptPath = path.join(__dirname, 'ai_agent.py');
       const trainCmd = `python "${scriptPath}" --action train --restaurant "${restaurantId}"`;
@@ -315,6 +315,142 @@ app.post('/api/food-entries', async (req, res) => {
   } catch (error) {
     console.error('Error saving food entry:', error);
     res.status(500).json({ success: false, message: 'Server database write error.' });
+  }
+});
+
+app.post('/api/food-entries/bulk', async (req, res) => {
+  const { restaurantId, entries } = req.body;
+  if (!restaurantId || !entries || !Array.isArray(entries)) {
+    return res.status(400).json({ success: false, message: 'Missing restaurantId or entries array.' });
+  }
+
+  try {
+    for (const entry of entries) {
+      const { foodName, quantityPrepared, quantityRemaining, date, timeSlot } = entry;
+      if (!foodName || quantityPrepared === undefined || quantityRemaining === undefined || !date) continue;
+      
+      const entryId = `entry_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      await runAsync(
+        `INSERT INTO food_entries (id, restaurant_id, food_name, quantity_prepared, quantity_remaining, date, time_slot)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [entryId, restaurantId, foodName, quantityPrepared, quantityRemaining, date, timeSlot || 'dinner']
+      );
+    }
+
+    // After bulk insert, check count and trigger AI training
+    const entriesCount = await getAsync(
+      `SELECT COUNT(DISTINCT date) as count FROM food_entries WHERE restaurant_id = ?`,
+      [restaurantId]
+    );
+
+    if (entriesCount.count >= 5) {
+      const scriptPath = path.join(__dirname, 'ai_agent.py');
+      const trainCmd = `python "${scriptPath}" --action train --restaurant "${restaurantId}"`;
+      
+      exec(trainCmd, async (err, stdout) => {
+        if (!err) {
+          console.log(`Bulk auto-train completed:`, stdout.trim());
+          broadcast({ type: 'MODEL_TRAINED', restaurantId, message: 'AI model trained successfully with your custom historical data.' });
+
+          // Generate predictions for tomorrow for all unique foods submitted
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toISOString().split('T')[0];
+          
+          const latestFoods = {};
+          for (const entry of entries) {
+             if (entry.foodName && entry.quantityPrepared !== undefined) {
+                 if (!latestFoods[entry.foodName] || entry.date > latestFoods[entry.foodName].date) {
+                     latestFoods[entry.foodName] = { date: entry.date, prepared: entry.quantityPrepared };
+                 }
+             }
+          }
+
+          for (const [foodName, data] of Object.entries(latestFoods)) {
+             const predictCmd = `python "${scriptPath}" --action predict --restaurant "${restaurantId}" --food "${foodName}" --prepared ${data.prepared} --date "${tomorrowStr}"`;
+             
+             await new Promise((resolve) => {
+               exec(predictCmd, async (pErr, pStdout) => {
+                 if (pErr) {
+                   console.error(`Prediction failed for ${foodName}:`, pErr);
+                   return resolve();
+                 }
+                 try {
+                   const predRes = JSON.parse(pStdout.trim());
+                   if (predRes.success) {
+                     const predId = `pred_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                     
+                     await runAsync(
+                       `INSERT INTO predictions (id, restaurant_id, food_name, prediction_date, predicted_leftover, predicted_waste)
+                        VALUES (?, ?, ?, ?, ?, ?)`,
+                       [predId, restaurantId, foodName, tomorrowStr, predRes.predicted_leftover, predRes.predicted_waste]
+                     );
+                     
+                     broadcast({
+                       type: 'PREDICTION_READY',
+                       restaurantId,
+                       prediction: predRes,
+                       message: `AI predicts tomorrow's ${foodName} leftovers: ${predRes.predicted_leftover} plates.`
+                     });
+                     
+                     if (predRes.predicted_leftover >= 5) {
+                       const donationId = `don_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                       const expiry = new Date(tomorrow);
+                       expiry.setHours(23, 59, 59);
+                       
+                       await runAsync(
+                         `INSERT INTO donations (id, restaurant_id, food_name, quantity, expiry_time, status)
+                          VALUES (?, ?, ?, ?, ?, 'pending')`,
+                         [donationId, restaurantId, foodName, predRes.predicted_leftover, expiry.toISOString()]
+                       );
+                       
+                       const restProfile = await getAsync('SELECT * FROM restaurants WHERE id = ?', [restaurantId]);
+                       const receivers = await allAsync('SELECT * FROM receivers');
+                       
+                       let nearestReceiver = null;
+                       let minDist = Infinity;
+                       receivers.forEach((recv) => {
+                         const dist = Math.sqrt(
+                           Math.pow(recv.latitude - restProfile.latitude, 2) + Math.pow(recv.longitude - restProfile.longitude, 2)
+                         );
+                         if (dist < minDist && (recv.capacity - recv.capacity_used) >= predRes.predicted_leftover) {
+                           minDist = dist;
+                           nearestReceiver = recv;
+                         }
+                       });
+                       
+                       broadcast({
+                         type: 'AUTONOMOUS_DONATION',
+                         donationId,
+                         restaurantName: restProfile.name,
+                         foodName,
+                         quantity: predRes.predicted_leftover,
+                         suggestedReceiver: nearestReceiver ? nearestReceiver.name : 'Local Shelters',
+                         message: `🚨 Agent Triggered: Autonomous surplus predicted for ${foodName} (${predRes.predicted_leftover} meals). NGO Pickup request created.`
+                       });
+                     }
+                   }
+                 } catch (e) {
+                   console.error('Error parsing prediction output:', pStdout, e);
+                 }
+                 resolve();
+               });
+             });
+          }
+        } else {
+          console.error('Bulk auto-train failed:', err);
+        }
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Bulk historical data logged successfully.`,
+      isModelTrained: entriesCount.count >= 5
+    });
+  } catch (error) {
+    console.error('Error saving bulk food entries:', error);
+    res.status(500).json({ success: false, message: 'Server database write error during bulk insert.' });
   }
 });
 

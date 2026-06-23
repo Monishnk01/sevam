@@ -1,5 +1,5 @@
 {
-  "name": "upahar-backend",
+  "name": "sevam-backend",
   "version": "1.0.0",
   "description": "Autonomous Food Waste Prediction and Redistribution AI Agent Backend",
   "main": "server.js",

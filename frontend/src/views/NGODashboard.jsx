@@ -1,233 +1,173 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Map, 
-  Truck, 
-  MapPin, 
-  CheckCircle, 
-  ShieldAlert, 
-  Layers,
-  ArrowRight,
-  TrendingUp,
-  RefreshCw
-} from 'lucide-react';
-import CustomMap from '../components/CustomMap';
+import { Truck, MapPin, CheckCircle, ShieldAlert, Layers } from 'lucide-react';
+import { getDonations, acceptDonation, updateDonationStatus } from '../firebase';
 
-export default function NGODashboard({ user, notifications }) {
-  const [restaurants, setRestaurants] = useState([]);
-  const [receivers, setReceivers] = useState([]);
-  const [donations, setDonations] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const API_URL = 'http://localhost:5000/api';
+export default function NGODashboard({ user }) {
+  const [availableDonations, setAvailableDonations] = useState([]);
+  const [activePickups, setActivePickups] = useState([]);
+  const [loadingId, setLoadingId] = useState(null);
 
   useEffect(() => {
-    fetchNgoData();
-  }, [notifications]); // Refresh when WebSocket notification arrives
+    const unsubscribe = getDonations((data) => {
+      // Filter for Pending donations for all
+      const available = data.filter(d => d.status === 'Pending');
+      
+      // Filter for donations claimed by THIS distributor that are not delivered yet
+      const active = data.filter(d => 
+        (d.status === 'Claimed' || d.status === 'In Transit') && 
+        d.acceptedById === user.uid
+      );
 
-  const fetchNgoData = async () => {
+      setAvailableDonations(available);
+      setActivePickups(active);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleAcceptPickup = async (donation) => {
+    setLoadingId(donation.id);
     try {
-      const resRest = await fetch(`${API_URL}/restaurants`);
-      const dataRest = await resRest.json();
-      if (dataRest.success) setRestaurants(dataRest.list);
-
-      const resRecv = await fetch(`${API_URL}/receivers`);
-      const dataRecv = await resRecv.json();
-      if (dataRecv.success) setReceivers(dataRecv.list);
-
-      const resDon = await fetch(`${API_URL}/donations`);
-      const dataDon = await resDon.json();
-      if (dataDon.success) setDonations(dataDon.donations);
-    } catch (err) {
-      console.error('Error fetching NGO data:', err);
-    }
-  };
-
-  const handleAcceptPickup = async (donationId) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/donations/${donationId}/pickup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ distributorId: user.id })
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchNgoData();
-      } else {
-        alert(data.message || 'Failed to accept pickup');
-      }
+      await acceptDonation(donation.id, donation, user);
     } catch (err) {
       console.error(err);
-      alert('Error connecting to backend API.');
+      alert('Error accepting donation.');
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
   const handleDeliverPickup = async (donationId) => {
-    setLoading(true);
+    setLoadingId(donationId);
     try {
-      const res = await fetch(`${API_URL}/donations/${donationId}/deliver`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchNgoData();
-      } else {
-        alert(data.message || 'Failed to confirm delivery');
-      }
+      await updateDonationStatus(donationId, 'Delivered');
     } catch (err) {
       console.error(err);
-      alert('Error connecting to backend API.');
+      alert('Error marking as delivered.');
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
-  // Filter lists
-  const availableDonations = donations.filter((d) => d.status === 'pending');
-  const activePickups = donations.filter((d) => d.status === 'assigned' || d.status === 'picked_up');
-
   return (
     <div className="flex flex-col gap-8 text-left">
-      
-      {/* 1. Radar Map Visualization Banner */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white mb-1">
-            Redistribution Radar Command
-          </h2>
-          <p className="text-xs text-dark-400">
-            Real-time visual map displaying spatial locations of active surplus food requests and receiver shelters.
-          </p>
-        </div>
-
-        <CustomMap 
-          restaurants={restaurants} 
-          receivers={receivers} 
-          activeDonations={donations} 
-        />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 gap-8 items-start">
         
-        {/* 2. Available Surplus Queue */}
-        <div className="xl:col-span-6 p-6 rounded-2xl glass-card border border-dark-800 flex flex-col gap-5 h-[480px]">
-          <h3 className="font-bold text-sm text-white flex items-center gap-2 pb-3 border-b border-dark-800 uppercase tracking-wide">
+        {/* Available Surpluses Table */}
+        <div className="p-6 rounded-2xl glass-card border border-dark-800 flex flex-col gap-5">
+          <h3 className="font-bold text-sm text-dark-50 flex items-center gap-2 pb-3 border-b border-dark-800 uppercase tracking-wide">
             <Layers className="w-4 h-4 text-warning-400" />
-            Active Food Surpluses Detected
+            Available Food Donations
           </h3>
 
-          <div className="flex-1 overflow-y-auto flex flex-col gap-3.5 pr-2">
-            {availableDonations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-6 border border-dashed border-dark-800 rounded-xl">
-                <ShieldAlert className="w-8 h-8 text-dark-500 mb-2 animate-pulse" />
-                <h4 className="font-semibold text-white text-xs mb-1">No Surpluses Available</h4>
-                <p className="text-[10px] text-dark-400 max-w-[240px]">
-                  All predicted and logged food surpluses have been successfully claimed or no active restaurants have surplus right now.
-                </p>
-              </div>
-            ) : (
-              availableDonations.map((don) => (
-                <div 
-                  key={don.id}
-                  className="p-4 rounded-xl border border-dark-800 bg-dark-900/30 flex items-center justify-between gap-4 glass-card-hover"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-bold text-xs text-white truncate">{don.food_name}</span>
-                      <span className="shrink-0 px-2 py-0.5 rounded bg-warning-500/10 text-warning-400 border border-warning-500/20 text-[9px] font-bold">
-                        {don.quantity} plates
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1 text-[10px] text-dark-400">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                        <span className="truncate">{don.restaurant_name} ({don.restaurant_address})</span>
+          <div className="overflow-x-auto rounded-xl border border-dark-800">
+            <table className="w-full text-left text-xs text-dark-300">
+              <thead className="bg-dark-900/50 text-dark-400 border-b border-dark-800">
+                <tr>
+                  <th className="px-4 py-3 font-semibold uppercase">ID</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Food Name</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Qty (kg)</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Donor</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Pickup Location</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Expiry</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-800">
+                {availableDonations.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-4 py-8 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <ShieldAlert className="w-6 h-6 text-dark-500" />
+                        <span>No Pending Donations Available.</span>
                       </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleAcceptPickup(don.id)}
-                    disabled={loading}
-                    className="shrink-0 py-2.5 px-4 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-primary-500/10"
-                  >
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>Accept Route</span>
-                  </button>
-
-                </div>
-              ))
-            )}
+                    </td>
+                  </tr>
+                ) : (
+                  availableDonations.map(don => (
+                    <tr key={don.id} className="hover:bg-dark-900/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-dark-50">{don.donationId}</td>
+                      <td className="px-4 py-3 font-semibold text-dark-50">{don.foodName}</td>
+                      <td className="px-4 py-3">{don.quantityKg} kg</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="text-dark-50">{don.donorName}</span>
+                          <span className="text-[10px]">{don.donorEmail}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 truncate max-w-[150px]">{don.pickupLocation}</td>
+                      <td className="px-4 py-3">{don.expiryDate}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleAcceptPickup(don)}
+                          disabled={loadingId === don.id}
+                          className="shrink-0 py-1.5 px-3 rounded-lg bg-primary-600 hover:bg-primary-500 text-dark-50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>{loadingId === don.id ? 'Claiming...' : 'Claim Donation'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* 3. My Active Pickup Routes */}
-        <div className="xl:col-span-6 p-6 rounded-2xl glass-card border border-dark-800 flex flex-col gap-5 h-[480px]">
-          <h3 className="font-bold text-sm text-white flex items-center gap-2 pb-3 border-b border-dark-800 uppercase tracking-wide">
+        {/* Active Delivery Routes */}
+        <div className="p-6 rounded-2xl glass-card border border-dark-800 flex flex-col gap-5">
+          <h3 className="font-bold text-sm text-dark-50 flex items-center gap-2 pb-3 border-b border-dark-800 uppercase tracking-wide">
             <Truck className="w-4 h-4 text-success-400" />
-            My Active Delivery Routes
+            My Active Deliveries
           </h3>
 
-          <div className="flex-1 overflow-y-auto flex flex-col gap-3.5 pr-2">
-            {activePickups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-6 border border-dashed border-dark-800 rounded-xl">
-                <CheckCircle className="w-8 h-8 text-dark-500 mb-2 animate-pulse" />
-                <h4 className="font-semibold text-white text-xs mb-1">Routes Clear</h4>
-                <p className="text-[10px] text-dark-400 max-w-[240px]">
-                  No assigned pickups in your queue. Accept pending surpluses on the left to start cargo redistribution.
-                </p>
-              </div>
-            ) : (
-              activePickups.map((don) => (
-                <div 
-                  key={don.id}
-                  className="p-4 rounded-xl border border-primary-500/10 bg-primary-500/5 flex flex-col gap-3.5"
-                >
-                  <div className="flex justify-between items-center pb-2 border-b border-dark-800">
-                    <div>
-                      <span className="font-bold text-xs text-white">{don.food_name}</span>
-                      <span className="ml-2 px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 text-[8px] font-bold">
-                        {don.quantity} plates
-                      </span>
-                    </div>
-
-                    <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] font-bold animate-pulse">
-                      In Transit
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-2 text-[10px] text-dark-300">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
-                      <span className="truncate"><strong>From:</strong> {don.restaurant_name} ({don.restaurant_address})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-success-400 shrink-0" />
-                      <span className="truncate"><strong>To Shelter:</strong> Bangalore Food Shelter Node</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleDeliverPickup(don.id)}
-                    disabled={loading}
-                    className="w-full py-2.5 rounded-xl bg-success-600 hover:bg-success-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-success-500/10"
-                  >
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Confirm Dropoff & Deliver</span>
-                  </button>
-
-                </div>
-              ))
-            )}
+          <div className="overflow-x-auto rounded-xl border border-dark-800">
+            <table className="w-full text-left text-xs text-dark-300">
+              <thead className="bg-dark-900/50 text-dark-400 border-b border-dark-800">
+                <tr>
+                  <th className="px-4 py-3 font-semibold uppercase">ID</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Food Name</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Pickup Location</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Status</th>
+                  <th className="px-4 py-3 font-semibold uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-800">
+                {activePickups.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-4 py-8 text-center">No active deliveries.</td>
+                  </tr>
+                ) : (
+                  activePickups.map(don => (
+                    <tr key={don.id} className="hover:bg-dark-900/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-dark-50">{don.donationId}</td>
+                      <td className="px-4 py-3 font-semibold text-dark-50">{don.foodName}</td>
+                      <td className="px-4 py-3">{don.pickupLocation}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded text-[10px] font-bold border bg-amber-500/10 border-amber-500/20 text-amber-400">
+                          {don.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleDeliverPickup(don.id)}
+                          disabled={loadingId === don.id}
+                          className="w-fit py-1.5 px-3 rounded-lg bg-success-600 hover:bg-success-500 text-dark-50 text-xs font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Mark Delivered</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
       </div>
-
     </div>
   );
 }

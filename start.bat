@@ -1,13 +1,13 @@
 @echo off
-title Upahar AI Launcher
+title Sevam AI Launcher
 echo =================================================================
-echo                    UPAHAR AI - STARTUP SYSTEM
+echo                    SEVAM AI - STARTUP SYSTEM
 echo =================================================================
 echo [System Check] Launching backend Express SQLite & AI Server...
 echo =================================================================
 
 :: Start backend in a new command window
-start cmd /k "cd backend && echo [Backend] Starting Upahar Express API... && npm start"
+start cmd /k "cd backend && echo [Backend] Starting Sevam Express API... && npm start"
 
 echo [System Check] Launching frontend React-Vite & Tailwind Dashboard...
 echo =================================================================
