@@ -176,3 +176,48 @@ export const getHistoricalData = (userId, callback) => {
   });
 };
 
+// --- RECEIVER REQUIREMENTS ---
+
+// Add a new requirement (Receiver)
+export const addRequirement = async (requirementData) => {
+  try {
+    const requirementsRef = collection(db, "receiverRequirements");
+    const snapshot = await getDocs(requirementsRef);
+    const count = snapshot.size + 1;
+    const requirementId = `REQ${count.toString().padStart(3, '0')}`;
+
+    // Clean data to strictly prevent any undefined values breaking Firestore
+    const cleanData = Object.fromEntries(
+      Object.entries(requirementData).map(([k, v]) => [k, v === undefined ? null : v])
+    );
+
+    const fullData = {
+      requirementId,
+      ...cleanData,
+      status: "Active",
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(requirementsRef, fullData);
+    return requirementId;
+  } catch (error) {
+    console.error("Firebase addRequirement Error:", error);
+    throw error;
+  }
+};
+
+// Real-time listener for all requirements
+export const getRequirements = (callback) => {
+  const q = query(collection(db, "receiverRequirements"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const requirements = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(requirements);
+  }, (error) => {
+    console.error("Firebase getRequirements Error:", error);
+    callback([]);
+  });
+};
+

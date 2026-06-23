@@ -199,7 +199,7 @@ export default function Login({ onLoginSuccess }) {
       {bgImages.map((img, index) => (
         <div
           key={img}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === bgIndex ? 'opacity-100' : 'opacity-0'} z-0 contrast-125 saturate-110`}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === bgIndex ? 'opacity-100' : 'opacity-0'} z-0 contrast-[1.15] saturate-[1.3] brightness-105 sepia-[.1]`}
           style={{
             backgroundImage: `url(${img})`,
             backgroundSize: 'cover',
@@ -214,17 +214,17 @@ export default function Login({ onLoginSuccess }) {
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 mix-blend-overlay"
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-60 mix-blend-overlay"
       >
         <source src="/bg-video.mp4" type="video/mp4" />
       </video>
 
-      {/* Darkened Overlay for cinematic feel */}
-      <div className="absolute inset-0 bg-dark-950/70 z-0" />
+      {/* Darkened Overlay for cinematic feel (Reduced by ~25% for better visibility) */}
+      <div className="absolute inset-0 bg-dark-950/45 z-0" />
       
       {/* Visual Enhancements */}
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-dark-950/90 z-0 pointer-events-none" />
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary-500/20 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-dark-950/10 via-transparent to-dark-950/75 z-0 pointer-events-none" />
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary-500/30 rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center z-10 relative">
         
@@ -296,7 +296,7 @@ export default function Login({ onLoginSuccess }) {
         </div>
 
         {/* Right Side Glassmorphism Login Panel */}
-        <div className="lg:col-span-4 lg:col-start-9 p-8 sm:p-10 rounded-[2rem] border border-white/10 bg-dark-950/40 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden">
+        <div className="lg:col-span-4 lg:col-start-9 p-8 sm:p-10 rounded-[2rem] border border-white/10 bg-dark-950/50 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden">
           
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary-500 to-primary-300" />
           

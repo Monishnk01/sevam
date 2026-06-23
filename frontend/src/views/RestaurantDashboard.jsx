@@ -13,6 +13,13 @@ import {
 } from 'lucide-react';
 import { addDonation, getDonations, getHistoricalData } from '../firebase';
 import BulkDataEntryModal from '../components/BulkDataEntryModal';
+
+const withTimeout = (promise, ms) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms))
+  ]);
+};
 import MultivariateLinearRegression from 'ml-regression-multivariate-linear';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -146,29 +153,41 @@ export default function RestaurantDashboard({ user }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDonation({
-        foodName,
-        quantityKg: Number(quantityKg),
-        foodCategory,
-        cookedDate,
-        expiryDate,
-        donorName: user.name,
-        donorEmail: user.email,
+      await withTimeout(addDonation({
+        foodName: foodName || 'Unnamed Food',
+        quantityKg: Number(quantityKg) || 0,
+        foodCategory: foodCategory || 'Cooked Meal',
+        cookedDate: cookedDate || new Date().toISOString().split('T')[0],
+        expiryDate: expiryDate || '',
+        donorName: user.name || 'Unknown',
+        donorEmail: user.email || '',
         donorPhone: user.phone || '',
-        pickupLocation,
-        description
-      });
+        pickupLocation: pickupLocation || 'Unknown',
+        description: description || ''
+      }), 4000); // 4-second timeout to prevent infinite hanging
       
+      // Reset form fields
       setFoodName('');
       setQuantityKg('');
+      setFoodCategory('');
+      setCookedDate('');
       setExpiryDate('');
       setPickupLocation('');
       setDescription('');
       
       alert('Donation submitted successfully!');
     } catch (err) {
-      console.error(err);
-      alert('Error submitting donation.');
+      if (err.message === 'TIMEOUT') {
+        alert('Warning: Cloud sync took too long! It was saved to your local cache, but your Firebase database is unresponsive. Distributors will not see this until your Firebase connects.');
+        // Still reset form to prevent getting stuck
+        setFoodName('');
+        setQuantityKg('');
+        setPickupLocation('');
+        setDescription('');
+      } else {
+        console.error(err);
+        alert('Error submitting donation.');
+      }
     } finally {
       setLoading(false);
     }
